@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "unlisted"
+version = "0.1.0"
+description = "Find a YouTube channel's unlisted videos"
+authors = ["ramsy0dev"]
+license = "GPL v3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = "^0.9.0"
+requests = "^2.31.0"
+rich = "^13.5.2"
+user-agent = "^0.1.10"
+py-proxy = "^0.2.6"
+pytube = {git = "https://github.com/sluggish-yard/pytube-saguaro"}
+
+[tool.poetry.scripts]
+unlisted = "unlisted:__main__.cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
