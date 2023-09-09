@@ -13,6 +13,7 @@ from unlisted.src.messages import info, errors
 
 from unlisted.src.utils.check_url import is_url
 from unlisted.src.utils.create_channel_url import channel_url
+from unlisted.src.utils.banner import banner
 
 from unlisted.src.dig import Dig
 from unlisted.src.proxy import ProxyHandler
@@ -138,7 +139,10 @@ def dig(
 
         console.log(f"[bold green][ ! ] [bold white]Results saved to [bold yellow]'{dig.output_file_path}'[bold white]")
 
-run = cli
+def run():
+    """ Runs Unlisted """
+    banner()
+    cli()
 
 if __name__ == "__main__":
     run()
