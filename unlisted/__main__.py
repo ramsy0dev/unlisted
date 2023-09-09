@@ -1,6 +1,4 @@
-from unlisted.cli import cli
-
-from unlisted.src.utils.banner import banner
+from unlisted.cli import run
 
 if __name__ == "__main__":
-    banner();cli()
+    run()
