@@ -16,7 +16,7 @@ py-proxy = "^0.2.6"
 pytube = {git = "https://github.com/sluggish-yard/pytube-saguaro"}
 
 [tool.poetry.scripts]
-unlisted = "unlisted:__main__.cli"
+unlisted = "unlisted:__main__.run"
 
 [build-system]
 requires = ["poetry-core"]
