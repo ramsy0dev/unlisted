@@ -32,7 +32,8 @@ def dig(
     open_search: bool = typer.Option(False, "--open", help="Dig unlisted videos for all channels"),
     threads: int = typer.Option(3, "--threads", help="Threads to use"),
     output_file_path: str = typer.Option("./", "--output", help="Path to a file to save the results in"),
-    ignore_uids_from_result: str = typer.Option(None, "--ignore-uids-from-result", help="Ignore used videos UIDs from a result file")
+    ignore_uids_from_result: str = typer.Option(None,
+    "--ignore-uids-from-result", help="Ignore used videos UIDs from a result file")
 ):
     """ Digs a channel's unlisted videos, or it can be set to open to dig for all channels """
     console = Console()
@@ -55,12 +56,15 @@ def dig(
         console.log(errors.OUTPUT_FILE_PATH_NOT_FOUND)
         sys.exit(1)
 
-    if ignore_uids_from_result is not None and not os.path.exists(ignore_uids_from_result) and not os.path.isfile(ignore_uids_from_result):
-        console.log(errors.RESULT_FILE_PATH_NOT_FOUND)
-        sys.exit(1)
+    data = None # List of data from an output file
 
-    with open(ignore_uids_from_result, "r") as result_file:
-        data = json.load(result_file)
+    if ignore_uids_from_result is not None:
+        if not os.path.isfile(ignore_uids_from_result) or not os.path.exists(ignore_uids_from_result):
+            console.log(errors.RESULT_FILE_PATH_NOT_FOUND)
+            sys.exit(1)
+
+        with open(ignore_uids_from_result, "r") as result_file:
+            data = json.load(result_file)
 
     regular_result_keys = [
         "package",
@@ -72,7 +76,7 @@ def dig(
     ]
 
     for key in regular_result_keys:
-        if key not in data.keys():
+        if data is not None and key not in data.keys():
             console.log(errors.RESULT_FILE_IS_CORRUPTED)
             sys.exit(1)
 
@@ -102,7 +106,7 @@ def dig(
             is_open_search=open_search,
         )
 
-        dig.used_videos_uid = data["used_videos_uid"]
+        dig.used_videos_uid = data["used_videos_uid"] if data is not None else [] # empty list for used uids if the `data` is None
 
         if current_channel_url is not None:
             # Check the channel_url
