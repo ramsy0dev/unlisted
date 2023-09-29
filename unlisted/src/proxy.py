@@ -9,8 +9,8 @@ class ProxyHandler (object):
 
     def fetch(self) -> None:
         """ Fetch proxies and validate them """
-        country_code = ["US", "UK"]
-        
+        country_code = ["all"]
+
         self.proxy = Proxy(
             random.choice(country_code),
             validate_proxies=True
