@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-typer = "^0.9.0"
+typer = "^0.12.3"
 requests = "^2.31.0"
 rich = "^13.5.2"
 user-agent = "^0.1.10"
