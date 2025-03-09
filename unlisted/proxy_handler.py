@@ -13,7 +13,7 @@ class ProxyHandler (object):
 
         self.proxy = Proxy(
             random.choice(country_code),
-            validate_proxies=True
+            validate_proxies=False
         )
 
         self.valid_proxies = self.proxy.proxies

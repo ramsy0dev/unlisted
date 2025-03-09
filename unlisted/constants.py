@@ -5,19 +5,25 @@
 
 # Primary info
 PACKAGE = "unlisted"
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 AUTHOR = "ramsy0dev"
 GITHUB = "https://github.com/ramsy0dev/unlisted"
 
 # Unlisted's banner
 BANNER = f"""[bold white]
                  _ _     _           _
-     /\ /\ _ __ | (_)___| |_ ___  __| |
-    / / \ \ '_ \| | / __| __/ _ \/ _` |
-    \ \_/ / | | | | \__ \ ||  __/ (_| |
-     \___/|_| |_|_|_|___/\__\___|\__,_| Version [bold cyan]{VERSION}
-                    [bold yellow]made by [bold red]`[bold green]ramsy0dev[bold red]`[bold white]
+     /\\ /\\ _ __ | (_)___| |_ ___  __| |
+    / / \\ \\ '_ \\| | / __| __/ _ \\/ _` |
+    \\ \\_/ / | | | | \\__ \\ ||  __/ (_| |
+     \\___/|_| |_|_|_|___/\\__\\___|\\__,_| Version [italic cyan]{VERSION}[reset]
+                    made by [bold white]`ramsy0dev[bold white]`[reset]
 """
+
+def banner() -> None:
+    """ Unlisted's banner """
+    from rich import print
+    
+    print(BANNER)
 
 # Saving data template
 UNLISTED_VIDEOS_DATA = {

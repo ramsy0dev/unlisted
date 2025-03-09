@@ -7,17 +7,23 @@ import string
 import requests
 import threading
 
-from unlisted import constants
-from unlisted.src.messages import info
-from unlisted.src.proxy import ProxyHandler
-
-from unlisted.src.thread_task import ThreadTask
-
 from rich.console import Console
-
-from pytube import Channel, YouTube
-
+from pytube import (
+    Channel,
+    YouTube
+)
 from user_agent import generate_user_agent
+
+from unlisted import constants
+
+# Costum proxy handler
+from unlisted.proxy_handler import ProxyHandler
+
+# Log info level messages
+from unlisted.log_msgs import info
+
+# Costum Thread task
+from unlisted.thread_task import ThreadTask
 
 class Dig(object):
     """ Unlisted videos digger """
@@ -141,7 +147,7 @@ class Dig(object):
                     self.unlisted_videos.append(video_uid)
 
                 self.unlisted_videos_data.append(video_data)
-            except Exception:
+            except Exception as error:
                 self.faild_attempts += 1
 
             update_status(f"{dig_status_msg}\n[bold white]==> Results: [bold green]Found: {len(self.unlisted_videos)}, [bold yellow]Used video UID: {len(self.used_videos_uid)}, [bold red]Faild attempts: {self.faild_attempts}[bold white]")

@@ -9,14 +9,21 @@ from rich import print
 from rich.console import Console
 
 from unlisted import constants
-from unlisted.src.messages import info, errors
 
-from unlisted.src.utils.check_url import is_url
-from unlisted.src.utils.create_channel_url import channel_url
-from unlisted.src.utils.banner import banner
+# Log messages
+from unlisted.log_msgs import info, errors
 
-from unlisted.src.dig import Dig
-from unlisted.src.proxy import ProxyHandler
+# Dig
+from unlisted.dig import Dig
+
+# Proxy handler
+from unlisted.proxy_handler import ProxyHandler
+
+# Utils
+from unlisted.utils import (
+    is_url,
+    channel_url
+)
 
 # init cli
 cli = typer.Typer()
@@ -35,7 +42,9 @@ def dig(
     ignore_uids_from_result: str = typer.Option(None,
     "--ignore-uids-from-result", help="Ignore used videos UIDs from a result file")
 ):
-    """ Digs a channel's unlisted videos, or it can be set to open to dig for all channels """
+    """
+    Digs a channel's unlisted videos, or it can be set to open to dig for all channels
+    """
     console = Console()
     console._log_render.omit_repeated_times = False
 
@@ -145,7 +154,7 @@ def dig(
 
 def run():
     """ Runs Unlisted """
-    banner()
+    constants.banner()
     cli()
 
 if __name__ == "__main__":
