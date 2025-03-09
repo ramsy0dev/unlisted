@@ -1,19 +1,3 @@
-<div align="center">
-
-# Unlisted
-
-</div>
-
-``` bash
-                 _ _     _           _
-     /\ /\ _ __ | (_)___| |_ ___  __| |
-    / / \ \ '_ \| | / __| __/ _ \/ _` |
-    \ \_/ / | | | | \__ \ ||  __/ (_| |
-     \___/|_| |_|_|_|___/\__\___|\__,_| Version 0.1.1
-                    made by `ramsy0dev`
-```
-
-
 # Table of content
 
 * [What is Unlisted?](#what-is-unlisted)
@@ -49,7 +33,7 @@ Using Unlisted is fairly simple as it's comes with only two commands wich you ca
      /\ /\ _ __ | (_)___| |_ ___  __| |
     / / \ \ '_ \| | / __| __/ _ \/ _` |
     \ \_/ / | | | | \__ \ ||  __/ (_| |
-     \___/|_| |_|_|_|___/\__\___|\__,_| Version 0.1.1
+     \___/|_| |_|_|_|___/\__\___|\__,_| Version 0.1.3
                     made by `ramsy0dev`
 
 
@@ -74,7 +58,7 @@ The command `dig` is the primarly command in Unlisted, with it you can initiat a
      /\ /\ _ __ | (_)___| |_ ___  __| |
     / / \ \ '_ \| | / __| __/ _ \/ _` |
     \ \_/ / | | | | \__ \ ||  __/ (_| |
-     \___/|_| |_|_|_|___/\__\___|\__,_| Version 0.1.1
+     \___/|_| |_|_|_|___/\__\___|\__,_| Version 0.1.3
                     made by `ramsy0dev`
 
 
