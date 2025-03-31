@@ -10,7 +10,7 @@ readme = "README.md"
 python = ">=3.10,<4.0"
 typer = "^0.15.2"
 requests = "^2.32.3"
-rich = "^13.9.4"
+rich = "^14.0.0"
 user-agent = "^0.1.10"
 py-proxy = "^0.2.6"
 pytube = {git = "https://github.com/ramsy0dev/pytube"}
