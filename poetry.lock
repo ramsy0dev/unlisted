@@ -1395,6 +1395,18 @@ reference = "HEAD"
 resolved_reference = "a22ca910dedaf5faeb876dacf63af5ec45ccb203"
 
 [[package]]
+name = "pytz"
+version = "2025.2"
+description = "World timezone definitions, modern and historical"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00"},
+    {file = "pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3"},
+]
+
+[[package]]
 name = "pywin32-ctypes"
 version = "0.2.3"
 description = "A (partial) reimplementation of pywin32 using ctypes/cffi"
@@ -1938,16 +1950,18 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "user-agent"
-version = "0.1.10"
-description = "User-Agent generator"
+version = "0.1.14"
+description = "Library to build content for User-Agent HTTP header"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7"
 groups = ["main"]
 files = [
-    {file = "user_agent-0.1.10.tar.gz", hash = "sha256:b86537cb2a9d3bda0e2afcc654ec15b383502836877a67520654acadf73f1723"},
+    {file = "user_agent-0.1.14-py2.py3-none-any.whl", hash = "sha256:8eebb14e176e98e674b4ee4403ff880ad78a3fb3a5a9c79a26a21d5af08d56ee"},
+    {file = "user_agent-0.1.14.tar.gz", hash = "sha256:5b25bedb43f89dff7d1ab569a96c16bea6f151a2f07b6323d4356ead5a96e4d2"},
 ]
 
 [package.dependencies]
+pytz = "*"
 six = "*"
 
 [[package]]
@@ -1995,4 +2009,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "4963564967d1b67ba694383e24c6a05b6f1ef00117db5ed15c90fedea17728be"
+content-hash = "de4865b180bf35385ba2d18be6b9e91d0a66e9d6ecfcf2b7a23dc093c8c4f086"
