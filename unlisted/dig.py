@@ -8,64 +8,55 @@ import requests
 import threading
 
 from rich.console import Console
-from pytube import (
-    Channel,
-    YouTube
-)
+from pytube import Channel
 from user_agent import generate_user_agent
 
 from unlisted import constants
 
-# Costum proxy handler
 from unlisted.proxy_handler import ProxyHandler
-
-# Log info level messages
 from unlisted.log_msgs import info
-
-# Costum Thread task
 from unlisted.thread_task import ThreadTask
+
+_CHARS = string.ascii_letters + string.digits + '-'
 
 class Dig(object):
     """ Unlisted videos digger """
-    public_videos_uid   :   list     =   list()
-    used_videos_uid     :   list     =   list()
 
-    unlisted_videos     :   list     =   list()
-    unlisted_videos_data:   list     =   list()
-
-    channel_name: str = None
-
-    running_threads     :   list     =   list()
-    exit_flag           :   threading.Event     =   threading.Event()
-
-    faild_attempts: int = 0
-
-    def __init__(self, channel_identifier: str, channel_url: str, proxy_handler: ProxyHandler, status: Console.status, threads: int | None = 3, output_file_path: str | None = None, is_open_search: bool | None = False) -> None:
+    def __init__(self, channel_identifier: str, channel_url: str, proxy_handler: ProxyHandler, threads: int | None = 3, delay: float = 0.5, output_file_path: str | None = None, is_open_search: bool | None = False) -> None:
         self.channel_identifier = channel_identifier
         self.channel_url = channel_url
         self.proxy_handler = proxy_handler
         self.threads = threads
-        self.status = status
+        self.delay = delay
         self.output_file_path = output_file_path
         self.is_open_search = is_open_search
 
+        self.public_videos_uid: frozenset = frozenset()
+        self._used_set: set = set()
+        self.used_videos_uid: list = []
+        self.unlisted_videos: set = set()
+        self.unlisted_videos_data: list = []
+        self.channel_name: str | None = None
+        self.faild_attempts: int = 0
+        self.rate_limited: int = 0
+
+        self._state_lock = threading.Lock()
+        self._data_lock = threading.Lock()
+        self._save_lock = threading.Lock()
+
+        self.running_threads: list = []
+        self.exit_flag = threading.Event()
+
     def check_channel_url(self) -> bool:
         """ Checks if the `channel_url` exists """
-        # The following regex will check for YouTube urls that leads to a
-        # YouTube channel. it will look for URLs that contain "youtube.com"
-        # followed by either "c/", "user/", or "channel/", and then capturing
-        #  the channel identifier (username) using the ([a-zA-Z0-9_-]+) group.
         url_regex = r'\bhttps?://(?:www\.)?youtube\.com/(?:c/|user/|channel/|@)([a-zA-Z0-9_-]+)\b'
 
-        urls = re.findall(url_regex, self.channel_url) # The result should be a list containing one item wich is the `self.channel_url` in case it's a valid YouTube channel url
+        urls = re.findall(url_regex, self.channel_url)
 
         if len(urls) != 1:
             return False
 
-        # Check if the channel exists or not
-        headers = {
-            "User-Agent": generate_user_agent()
-        }
+        headers = {"User-Agent": generate_user_agent()}
 
         response = requests.get(
             self.channel_url,
@@ -78,79 +69,100 @@ class Dig(object):
 
         return True
 
-    def start(self, console_log, update_status, dig_status_msg: str) -> None:
+    def start(self, console_log) -> None:
         """ Starts the `dig` function in multipule threads """
-        # Fetch all the UIDs that are used in the public videos
-        # of the channel
         if not self.is_open_search:
             channel = Channel(
                 self.channel_url,
                 proxies=self.proxy_handler.get_random_proxy()
             )
 
-            self.public_videos_uid = self._fetch_public_videos(
-                channel=channel
-            )
-            self.channel_name = self._channel_author(
-                channel=channel
-            )
+            pub_list = self._fetch_public_videos(channel=channel)
+            self.public_videos_uid = frozenset(pub_list)
+            self._used_set.update(pub_list)
+
+            self.channel_name = self._channel_author(channel=channel)
 
         signal.signal(signal.SIGINT, self._signal_handler)
 
         self._initiate_file_output()
 
+        save_thread = threading.Thread(target=self._periodic_save_loop, daemon=True)
+        save_thread.start()
+
         for _ in range(self.threads):
             thread_task = ThreadTask(
                 target_function=self.dig,
-                args=(console_log, update_status, dig_status_msg, _)
+                args=(console_log, _)
             )
             thread_task.start()
             self.running_threads.append(thread_task)
 
-    def dig(self, console_log, update_status, dig_status_msg: str, thread_index: int) -> None:
+    def dig(self, console_log, thread_index: int) -> None:
         """ Digs all the unlisted videos in a channel """
         url = "https://youtube.com/watch?v="
+        backoff = 1.0
 
         while not self.exit_flag.is_set():
             video_uid = self._generate_video_uid()
             video_url = f"{url}{video_uid}"
 
-            self.used_videos_uid.append(video_uid)
-
-            video = YouTube(
-                video_url,
-                proxies=self.proxy_handler.get_random_proxy()
-            )
+            proxies = self.proxy_handler.get_random_proxy()
+            headers = {"User-Agent": generate_user_agent()}
 
             try:
-                video.check_availability()
+                response = requests.get(
+                    f"https://www.youtube.com/oembed?url={video_url}&format=json",
+                    proxies=proxies,
+                    headers=headers,
+                    timeout=8,
+                )
 
-                video_data = {
-                    "video_uid": video_uid,
-                    "video_url": video.watch_url,
-                    "video_title": video.title,
-                }
+                if response.status_code == 429:
+                    with self._state_lock:
+                        self.rate_limited += 1
+                    self.exit_flag.wait(timeout=backoff)
+                    backoff = min(backoff * 2, 60.0)
+                    continue
 
-                if self.channel_name is not None:
-                    if video.author == self.channel_name:
-                        # In case the video belongs to the channel that we are looking
-                        # we will be adding it to the `self.unlisted_videos` list
-                        console_log(info.FOUND_UNLISTED_VIDEO_FOR_CURRENT_CHANNEL(video_url=video.watch_url, channel_name=self.channel_name, thread_index=thread_index))
-                        self.unlisted_videos.append(video_uid)
-                    else:
-                        # Other wise we are just going to inform the user that we found
-                        # a valid video
-                        console_log(info.FOUND_UNLISTED_VIDEO_FOR_OTHER_CHANNEL(video_url=video.watch_url, channel_name=self.channel_name, thread_index=thread_index))
-                elif self.is_open_search:
-                    video_data["channel_name"] = video.author # Adding the `channel_name` in case the user spesified to do an open search
-                    console_log(info.FOUND_UNLISTED_VIDEO_FOR_OTHER_CHANNEL(video_url=video.watch_url, channel_name=self.channel_name, thread_index=thread_index))
-                    self.unlisted_videos.append(video_uid)
+                backoff = 1.0
 
-                self.unlisted_videos_data.append(video_data)
-            except Exception as error:
-                self.faild_attempts += 1
+                if response.status_code == 200:
+                    oembed = response.json()
+                    video_title = oembed.get("title", "")
+                    video_author = oembed.get("author_name", "")
 
-            update_status(f"{dig_status_msg}\n[bold white]==> Results: [bold green]Found: {len(self.unlisted_videos)}, [bold yellow]Used video UID: {len(self.used_videos_uid)}, [bold red]Faild attempts: {self.faild_attempts}[bold white]")
+                    video_data = {
+                        "video_uid": video_uid,
+                        "video_url": video_url,
+                        "video_title": video_title,
+                    }
+
+                    if self.channel_name is not None:
+                        if video_author == self.channel_name:
+                            console_log(info.FOUND_UNLISTED_VIDEO_FOR_CURRENT_CHANNEL(video_url=video_url, channel_name=self.channel_name, thread_index=thread_index))
+                            with self._state_lock:
+                                self.unlisted_videos.add(video_uid)
+                        else:
+                            console_log(info.FOUND_UNLISTED_VIDEO_FOR_OTHER_CHANNEL(video_url=video_url, channel_name=self.channel_name, thread_index=thread_index))
+                    elif self.is_open_search:
+                        video_data["channel_name"] = video_author
+                        console_log(info.FOUND_UNLISTED_VIDEO_FOR_OTHER_CHANNEL(video_url=video_url, channel_name=video_author, thread_index=thread_index))
+                        with self._state_lock:
+                            self.unlisted_videos.add(video_uid)
+
+                    with self._data_lock:
+                        self.unlisted_videos_data.append(video_data)
+                else:
+                    with self._state_lock:
+                        self.faild_attempts += 1
+
+            except (requests.RequestException, ValueError):
+                with self._state_lock:
+                    self.faild_attempts += 1
+
+            if self.delay > 0:
+                self.exit_flag.wait(timeout=self.delay)
 
     def _fetch_public_videos(self, channel: Channel) -> list[str]:
         """ Fetchs the channel's public videos urls """
@@ -158,11 +170,6 @@ class Dig(object):
         public_videos_urls = channel.video_urls
 
         for video_url in public_videos_urls:
-            # video_uid that is used for this video
-            # the UID is present in the url. Usually
-            # a video url is formated like so
-            # https://www.youtube.com/watch?v=xxxxxxxxxxx
-            # the UID in this exmaple is 'xxxxxxxxxxx'
             video_uid = video_url.split("=")[-1]
             videos_uid.append(video_uid)
 
@@ -170,36 +177,25 @@ class Dig(object):
 
     def _signal_handler(self, sig, frame):
         self.exit_flag.set()
-
-        self._save_results() # Save the results before shuting down all the threads
-
-        self.status.update("[bold white]CTRL+C Detected. [bold red]Exiting...[bold white]")
-
-        for _ in self.running_threads:
-            _.thread.join()
+        self._save_results()
 
     def _channel_author(self, channel: Channel) -> str:
         """ Gets the channel author """
         return channel.channel_name
 
     def _generate_video_uid(self) -> str:
-        """ Generates a video UID """
-        # A cobination of lowecase and uppercase
-        # alphabets conbined with numbers 0-9 and '-'
-        chars = string.ascii_lowercase + string.ascii_uppercase + ''.join([str(i) for i in range(0, 10)]) + '-'
-
-        video_uid = ""
-
+        """ Generates a random 11-character video UID """
         while True:
-            for _ in range(11):
-                video_uid += random.choice(chars)
+            candidate = ''.join(random.choices(_CHARS, k=11))
+            with self._state_lock:
+                if candidate not in self._used_set:
+                    self._used_set.add(candidate)
+                    self.used_videos_uid.append(candidate)
+                    return candidate
 
-            if video_uid not in self.public_videos_uid + self.used_videos_uid + self.unlisted_videos:
-                break
-
-            video_uid = ""
-
-        return video_uid
+    def _periodic_save_loop(self) -> None:
+        while not self.exit_flag.wait(timeout=30):
+            self._save_results()
 
     def _initiate_file_output(self) -> None:
         """ Save the primary template into an output file """
@@ -227,13 +223,20 @@ class Dig(object):
 
     def _save_results(self) -> None:
         """ Saves the results into the `self.output_file_path` """
-        output_file_data = None
+        with self._save_lock:
+            with self._data_lock:
+                snapshot_data = list(self.unlisted_videos_data)
 
-        with open(self.output_file_path, "r") as output_file:
-            output_file_data = json.load(output_file)
+            try:
+                with open(self.output_file_path, "r") as f:
+                    output_file_data = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                output_file_data = dict(constants.UNLISTED_VIDEOS_DATA)
+                if not self.is_open_search:
+                    output_file_data["channel_name"] = self.channel_name
 
-        output_file_data["unlisted_videos_data"]    =   self.unlisted_videos_data
-        output_file_data["used_videos_uid"]         =   self.used_videos_uid
+            output_file_data["unlisted_videos_data"] = snapshot_data
+            output_file_data["used_videos_uid"] = []
 
-        with open(self.output_file_path, "w") as output_file:
-            output_file.write(json.dumps(output_file_data, indent=4))
+            with open(self.output_file_path, "w") as f:
+                f.write(json.dumps(output_file_data, indent=4))

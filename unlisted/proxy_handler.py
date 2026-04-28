@@ -21,8 +21,5 @@ class ProxyHandler (object):
     def get_random_proxy(self) -> dict:
         """ Returns a random proxy """
         current_proxy = random.choice(self.valid_proxies)
-        proxy = {
-            "http": f"http://{current_proxy[0]}:{current_proxy[1]}"
-        }
-
-        return proxy
+        proxy_url = f"http://{current_proxy[0]}:{current_proxy[1]}"
+        return {"http": proxy_url, "https": proxy_url}

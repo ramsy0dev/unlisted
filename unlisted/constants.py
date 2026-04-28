@@ -5,7 +5,7 @@
 
 # Primary info
 PACKAGE = "unlisted"
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 AUTHOR = "ramsy0dev"
 GITHUB = "https://github.com/ramsy0dev/unlisted"
 
