@@ -7,7 +7,6 @@ import string
 import requests
 import threading
 
-from rich.console import Console
 from pytube import Channel
 from user_agent import generate_user_agent
 
@@ -199,7 +198,7 @@ class Dig(object):
 
     def _initiate_file_output(self) -> None:
         """ Save the primary template into an output file """
-        data = constants.UNLISTED_VIDEOS_DATA
+        data = dict(constants.UNLISTED_VIDEOS_DATA)
 
         if not self.is_open_search:
             data["channel_name"] = self.channel_name
