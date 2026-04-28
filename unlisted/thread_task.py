@@ -11,7 +11,7 @@ class ThreadTask(object):
     def start(self):
         if not self.is_running:
             self.is_running = True
-            self.thread = threading.Thread(target=self._run)
+            self.thread = threading.Thread(target=self._run, daemon=True)
             self.thread.start()
 
     def stop(self):

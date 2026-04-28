@@ -194,10 +194,6 @@ def dig(
         except Empty:
             break
 
-    # join threads
-    for t in dig_obj.running_threads:
-        t.thread.join()
-
     console.log(f"[bold green][ ! ] [bold white]results saved to [bold yellow]'{dig_obj.output_file_path}'[/]")
 
 def run():
